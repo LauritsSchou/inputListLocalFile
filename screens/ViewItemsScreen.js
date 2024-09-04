@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, FlatList, Pressable, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CheckBox } from "react-native-elements"; // Assuming you have this installed
+import { CheckBox } from "react-native-elements";
 
 export default function ViewItemsScreen() {
   const [listData, setListData] = useState([]);
