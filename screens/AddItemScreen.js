@@ -42,6 +42,12 @@ export default function AddItemScreen() {
     }
   }
 
+  function handleRemoveItem(key) {
+    const newList = listData.filter((item) => item.key !== key);
+    setListData(newList);
+    saveListData(newList);
+  }
+
   return (
     <View style={styles.container}>
       <Text>Add a new item to your list</Text>
@@ -49,7 +55,18 @@ export default function AddItemScreen() {
       <Pressable onPress={handleSubmit} style={styles.pressable}>
         <Text style={styles.pressableText}>Submit</Text>
       </Pressable>
-      <FlatList data={listData} renderItem={(data) => <Text>{data.item.name}</Text>} keyExtractor={(item) => item.key} />
+      <FlatList
+        data={listData}
+        renderItem={({ item }) => (
+          <View style={styles.listItem}>
+            <Text style={styles.itemText}>{item.name}</Text>
+            <Pressable onPress={() => handleRemoveItem(item.key)} style={styles.removeButton}>
+              <Text style={styles.removeButtonText}>Remove</Text>
+            </Pressable>
+          </View>
+        )}
+        keyExtractor={(item) => item.key}
+      />
     </View>
   );
 }
@@ -79,5 +96,25 @@ const styles = StyleSheet.create({
     padding: 10,
     margin: 10,
     width: 200,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    borderBottomColor: "#ccc",
+    borderBottomWidth: 1,
+    width: 300,
+  },
+  itemText: {
+    fontSize: 16,
+  },
+  removeButton: {
+    backgroundColor: "red",
+    padding: 5,
+    borderRadius: 3,
+  },
+  removeButtonText: {
+    color: "#fff",
   },
 });
