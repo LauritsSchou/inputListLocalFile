@@ -16,8 +16,8 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="AddItem" component={AddItemScreen} />
-        <Stack.Screen name="ViewItems" component={ViewItemsScreen} />
+        <Stack.Screen name="Add Item" component={AddItemScreen} />
+        <Stack.Screen name="View Items" component={ViewItemsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

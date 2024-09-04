@@ -7,8 +7,8 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text>Welcome to the bucket list app</Text>
-      <Button title="Add Item" onPress={() => navigation.navigate("AddItem")} />
-      <Button title="View Items" onPress={() => navigation.navigate("ViewItems")} />
+      <Button title="Add Item" onPress={() => navigation.navigate("Add Item")} />
+      <Button title="View Items" onPress={() => navigation.navigate("View Items")} />
       <StatusBar style="auto" />
     </View>
   );
