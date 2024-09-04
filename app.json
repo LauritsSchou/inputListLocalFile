@@ -21,6 +21,12 @@
       }
     },
     "web": {
+      "build": {
+        "babel": {
+          "include": ["react-native-web"]
+        }
+      },
+      "bundler": "metro",
       "favicon": "./assets/favicon.png"
     }
   }
