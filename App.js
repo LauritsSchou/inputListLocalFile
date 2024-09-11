@@ -5,6 +5,7 @@ import { enableScreens } from "react-native-screens";
 import HomeScreen from "./screens/HomeScreen.js";
 import AddItemScreen from "./screens/AddItemScreen.js";
 import ViewItemsScreen from "./screens/ViewItemsScreen.js";
+import DetailsScreen from "./screens/DetailsScreen.js";
 
 enableScreens();
 
@@ -17,6 +18,7 @@ export default function App() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Add Item" component={AddItemScreen} />
         <Stack.Screen name="View Items" component={ViewItemsScreen} />
+        <Stack.Screen name="Details" component={DetailsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

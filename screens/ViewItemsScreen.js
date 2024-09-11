@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, FlatList, Pressable, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckBox } from "react-native-elements";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ViewItemsScreen() {
   const [listData, setListData] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     loadListData();
@@ -48,20 +50,32 @@ export default function ViewItemsScreen() {
     saveListData(newList);
   }
 
+  function updateItem(updatedItem) {
+    const newList = listData.map((item) => (item.key === updatedItem.key ? updatedItem : item));
+    setListData(newList);
+    saveListData(newList);
+  }
+
   return (
     <View style={styles.container}>
       <Text>Here are your items</Text>
       <FlatList
         data={listData}
-        renderItem={({ item }) => (
-          <View style={styles.listItem}>
-            <CheckBox checked={item.completed} onPress={() => handleToggleComplete(item.key)} checkedColor="green" />
-            <Text style={[styles.itemText, item.completed && styles.completedItemText]}>{item.name}</Text>
-            <Pressable onPress={() => handleRemoveItem(item.key)} style={styles.removeButton}>
-              <Text style={styles.removeButtonText}>Remove</Text>
-            </Pressable>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const itemText = item.name.length > 25 ? item.name.substring(0, 25) + "..." : item.name;
+          return (
+            <View style={styles.listItem}>
+              <CheckBox checked={item.completed} onPress={() => handleToggleComplete(item.key)} checkedColor="green" />
+              <Text style={[styles.itemText, item.completed && styles.completedItemText]}>{itemText}</Text>
+              <Pressable onPress={() => navigation.navigate("Details", { item, updateItem })} style={styles.detailsButton}>
+                <Text style={styles.detailsButtonText}>Details</Text>
+              </Pressable>
+              <Pressable onPress={() => handleRemoveItem(item.key)} style={styles.removeButton}>
+                <Text style={styles.removeButtonText}>Remove</Text>
+              </Pressable>
+            </View>
+          );
+        }}
         keyExtractor={(item) => item.key}
       />
     </View>
@@ -90,6 +104,14 @@ const styles = StyleSheet.create({
   completedItemText: {
     textDecorationLine: "line-through",
     color: "gray",
+  },
+  detailsButton: {
+    backgroundColor: "blue",
+    padding: 5,
+    borderRadius: 3,
+  },
+  detailsButtonText: {
+    color: "#fff",
   },
   removeButton: {
     backgroundColor: "red",
