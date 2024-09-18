@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, TextInput, Button, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db } from "../firebase.js";
 
 export default function DetailsScreen({ route, navigation }) {
-  const { item, updateItem } = route.params;
+  const { item } = route.params;
   const [itemText, setItemText] = useState(item.name);
 
   const handleSave = async () => {
@@ -12,27 +12,13 @@ export default function DetailsScreen({ route, navigation }) {
       return;
     }
 
-    const updatedItem = { ...item, name: itemText };
-
     try {
-      const savedList = await AsyncStorage.getItem("listData");
-      const listData = savedList ? JSON.parse(savedList) : [];
-
-      const updatedList = listData.map((listItem) => {
-        if (listItem.key === item.key) {
-          return updatedItem;
-        }
-        return listItem;
+      await db.collection("items").doc(item.key).update({
+        name: itemText,
       });
-
-      await AsyncStorage.setItem("listData", JSON.stringify(updatedList));
-
-      updateItem(updatedItem);
-
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Error", "Failed to save the changes.");
-      console.error(error);
+      Alert.alert("Error", "Failed to update the item.");
     }
   };
 

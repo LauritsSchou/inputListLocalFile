@@ -1,60 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, FlatList, Pressable, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckBox } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
+import { db } from "../firebase.js";
 
 export default function ViewItemsScreen() {
   const [listData, setListData] = useState([]);
   const navigation = useNavigation();
 
   useEffect(() => {
-    loadListData();
+    const unsubscribe = db.collection("items").onSnapshot((snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        key: doc.id,
+        name: doc.data().name,
+        completed: doc.data().completed,
+      }));
+      setListData(items);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  async function loadListData() {
+  const handleRemoveItem = async (key) => {
     try {
-      const savedList = await AsyncStorage.getItem("listData");
-      if (savedList !== null) {
-        setListData(JSON.parse(savedList));
-      }
+      await db.collection("items").doc(key).delete();
     } catch (error) {
-      Alert.alert("Error", "Failed to load the list from storage.");
-      console.error(error);
+      Alert.alert("Error", "Failed to delete the item from Firebase.");
     }
-  }
+  };
 
-  async function saveListData(newList) {
+  const handleToggleComplete = async (key, completed) => {
     try {
-      await AsyncStorage.setItem("listData", JSON.stringify(newList));
+      await db.collection("items").doc(key).update({
+        completed: !completed,
+      });
     } catch (error) {
-      Alert.alert("Error", "Failed to save the list to storage.");
-      console.error(error);
+      Alert.alert("Error", "Failed to update the item.");
     }
-  }
-
-  function handleRemoveItem(key) {
-    const newList = listData.filter((item) => item.key !== key);
-    setListData(newList);
-    saveListData(newList);
-  }
-
-  function handleToggleComplete(key) {
-    const newList = listData.map((item) => {
-      if (item.key === key) {
-        return { ...item, completed: !item.completed };
-      }
-      return item;
-    });
-    setListData(newList);
-    saveListData(newList);
-  }
-
-  function updateItem(updatedItem) {
-    const newList = listData.map((item) => (item.key === updatedItem.key ? updatedItem : item));
-    setListData(newList);
-    saveListData(newList);
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -65,9 +48,9 @@ export default function ViewItemsScreen() {
           const itemText = item.name.length > 25 ? item.name.substring(0, 25) + "..." : item.name;
           return (
             <View style={styles.listItem}>
-              <CheckBox checked={item.completed} onPress={() => handleToggleComplete(item.key)} checkedColor="green" />
+              <CheckBox checked={item.completed} onPress={() => handleToggleComplete(item.key, item.completed)} checkedColor="green" />
               <Text style={[styles.itemText, item.completed && styles.completedItemText]}>{itemText}</Text>
-              <Pressable onPress={() => navigation.navigate("Details", { item, updateItem })} style={styles.detailsButton}>
+              <Pressable onPress={() => navigation.navigate("Details", { item })} style={styles.detailsButton}>
                 <Text style={styles.detailsButtonText}>Details</Text>
               </Pressable>
               <Pressable onPress={() => handleRemoveItem(item.key)} style={styles.removeButton}>

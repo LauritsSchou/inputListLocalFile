@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TextInput, Pressable, FlatList, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db } from "../firebase.js";
 
 export default function AddItemScreen() {
   const [text, setText] = useState("");
@@ -12,12 +12,17 @@ export default function AddItemScreen() {
 
   async function loadListData() {
     try {
-      const savedList = await AsyncStorage.getItem("listData");
-      if (savedList !== null) {
-        setListData(JSON.parse(savedList));
-      }
+      const snapshot = await db.collection("items").get();
+      const items = snapshot.docs.map((doc) => ({
+        key: doc.id,
+        name: doc.data().name,
+        completed: doc.data().completed,
+      }));
+
+      setListData(items);
+      saveListData(items);
     } catch (error) {
-      Alert.alert("Error", "Failed to load the list from storage.");
+      Alert.alert("Error", "Failed to load the list from Firebase.");
       console.error(error);
     }
   }
@@ -31,21 +36,39 @@ export default function AddItemScreen() {
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (text.trim().length > 0) {
-      const newList = [...listData, { key: listData.length.toString(), name: text }];
-      setListData(newList);
-      saveListData(newList);
-      setText("");
+      try {
+        const newDocRef = await db.collection("items").add({
+          name: text,
+          completed: false,
+        });
+
+        const newList = [...listData, { key: newDocRef.id, name: text }];
+        setListData(newList);
+        saveListData(newList);
+
+        setText("");
+      } catch (error) {
+        Alert.alert("Error", "Failed to save the item to Firebase.");
+        console.error(error);
+      }
     } else {
       Alert.alert("Validation", "Please enter an item name.");
     }
   }
 
-  function handleRemoveItem(key) {
-    const newList = listData.filter((item) => item.key !== key);
-    setListData(newList);
-    saveListData(newList);
+  async function handleRemoveItem(key) {
+    try {
+      await db.collection("items").doc(key).delete();
+
+      const newList = listData.filter((item) => item.key !== key);
+      setListData(newList);
+      saveListData(newList);
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete the item from Firebase.");
+      console.error(error);
+    }
   }
 
   return (
