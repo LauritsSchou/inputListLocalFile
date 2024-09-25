@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, FlatList, Pressable, Alert } from "react-native";
+import { StyleSheet, Text, View, FlatList, Pressable, Alert, Image } from "react-native";
 import { CheckBox } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
 import { db } from "../firebase.js";
@@ -14,6 +14,7 @@ export default function ViewItemsScreen() {
         key: doc.id,
         name: doc.data().name,
         completed: doc.data().completed,
+        imageUrl: doc.data().imageUrl,
       }));
       setListData(items);
     });
@@ -49,10 +50,13 @@ export default function ViewItemsScreen() {
           return (
             <View style={styles.listItem}>
               <CheckBox checked={item.completed} onPress={() => handleToggleComplete(item.key, item.completed)} checkedColor="green" />
+
               <Text style={[styles.itemText, item.completed && styles.completedItemText]}>{itemText}</Text>
+
               <Pressable onPress={() => navigation.navigate("Details", { item })} style={styles.detailsButton}>
                 <Text style={styles.detailsButtonText}>Details</Text>
               </Pressable>
+
               <Pressable onPress={() => handleRemoveItem(item.key)} style={styles.removeButton}>
                 <Text style={styles.removeButtonText}>Remove</Text>
               </Pressable>
@@ -79,10 +83,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomColor: "#ccc",
     borderBottomWidth: 1,
-    width: 300,
+    width: 350,
   },
   itemText: {
     fontSize: 18,
+    marginHorizontal: 10,
   },
   completedItemText: {
     textDecorationLine: "line-through",
@@ -92,6 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: "blue",
     padding: 5,
     borderRadius: 3,
+    marginHorizontal: 5,
   },
   detailsButtonText: {
     color: "#fff",
@@ -100,8 +106,18 @@ const styles = StyleSheet.create({
     backgroundColor: "red",
     padding: 5,
     borderRadius: 3,
+    marginHorizontal: 5,
   },
   removeButtonText: {
+    color: "#fff",
+  },
+  downloadButton: {
+    backgroundColor: "green",
+    padding: 5,
+    borderRadius: 3,
+    marginHorizontal: 5,
+  },
+  downloadButtonText: {
     color: "#fff",
   },
 });
