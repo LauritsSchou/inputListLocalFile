@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, Button, Alert, Image, Pressable } from "react-native";
+import { StyleSheet, Text, View, TextInput, Alert, Image, Pressable } from "react-native";
 import { db } from "../firebase.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Firebase storage functions
-import { launchImageLibrary } from "react-native-image-picker"; // Image picker
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as ImagePicker from "expo-image-picker"; // Expo image picker
 
 export default function DetailsScreen({ route, navigation }) {
   const { item } = route.params;
@@ -10,15 +10,36 @@ export default function DetailsScreen({ route, navigation }) {
   const [image, setImage] = useState(null); // Selected new image
   const [imageUri, setImageUri] = useState(item.imageUrl); // Current image URL
 
-  // Function to pick an image from the device
-  const pickImage = async () => {
-    let result = await launchImageLibrary({
-      mediaType: "photo",
-    });
+  // Function to request camera and media library permissions
+  const requestPermissions = async () => {
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (cameraStatus !== "granted" || mediaLibraryStatus !== "granted") {
+      Alert.alert("Error", "Permission to access camera and media library is required.");
+    }
+  };
 
-    if (!result.didCancel) {
-      const selectedImage = result.assets[0];
-      setImage(selectedImage); // Store selected image in state
+  // Function to pick an image from the gallery or open the camera
+  const pickImage = async (source) => {
+    await requestPermissions();
+
+    let result;
+    if (source === "camera") {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+    }
+
+    if (!result.canceled) {
+      setImage(result.assets[0]); // Set selected or taken image in state
     }
   };
 
@@ -76,13 +97,19 @@ export default function DetailsScreen({ route, navigation }) {
       {/* Display Current Image (if available) */}
       {imageUri && <Image source={{ uri: imageUri }} style={{ width: 200, height: 200, marginBottom: 20 }} />}
 
-      {/* Button to select a new image */}
-      <Pressable onPress={pickImage} style={styles.pressable}>
+      {/* Buttons to select a new image or take a new photo */}
+      <Pressable onPress={() => pickImage("library")} style={styles.pressable}>
         <Text style={styles.pressableText}>Select New Image</Text>
       </Pressable>
 
+      <Pressable onPress={() => pickImage("camera")} style={styles.pressable}>
+        <Text style={styles.pressableText}>Take New Photo</Text>
+      </Pressable>
+
       {/* Button to save changes */}
-      <Button title="Save" onPress={handleSave} />
+      <Pressable onPress={handleSave} style={styles.pressable}>
+        <Text style={styles.pressableText}>Save</Text>
+      </Pressable>
 
       <Text style={styles.itemStatus}>Completed: {item.completed ? "Yes" : "No"}</Text>
     </View>

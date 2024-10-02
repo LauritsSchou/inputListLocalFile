@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TextInput, Pressable, FlatList, Alert, Image } from "react-native";
 import { db } from "../firebase.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Firebase storage functions
-import { launchImageLibrary } from "react-native-image-picker"; // Image picker
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as ImagePicker from "expo-image-picker";
 
 export default function AddItemScreen() {
   const [text, setText] = useState("");
   const [listData, setListData] = useState([]);
-  const [image, setImage] = useState(null); // Image object selected from device
-  const [imageUri, setImageUri] = useState(null); // Image download URL after upload
+  const [imageUri, setImageUri] = useState(null); // For storing selected image URI
 
   useEffect(() => {
     loadListData();
   }, []);
 
-  // Function to load list data from Firestore
+  useEffect(() => {
+    // Request permissions for camera and media library
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Sorry, we need media library permissions to make this work!");
+      }
+    })();
+  }, []);
+
   async function loadListData() {
     try {
       const snapshot = await db.collection("items").get();
@@ -22,7 +30,7 @@ export default function AddItemScreen() {
         key: doc.id,
         name: doc.data().name,
         completed: doc.data().completed,
-        imageUrl: doc.data().imageUrl, // Include image URL
+        imageUrl: doc.data().imageUrl,
       }));
 
       setListData(items);
@@ -32,21 +40,35 @@ export default function AddItemScreen() {
     }
   }
 
-  // Function to pick an image from the device
-  const pickImage = async () => {
-    let result = await launchImageLibrary({
-      mediaType: "photo",
-    });
+  // Function to pick an image from the device or take a new photo
+  const pickImage = async (source) => {
+    let result;
+    if (source === "camera") {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+    }
 
-    if (!result.didCancel) {
-      const selectedImage = result.assets[0];
-      setImage(selectedImage); // Store selected image in state
+    console.log(result); // Log the entire result object
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      // Set image URI from assets[0].uri
+      setImageUri(result.assets[0].uri);
+    } else {
+      Alert.alert("Error", "No image selected.");
     }
   };
 
-  // Function to upload the image to Firebase Storage and get the URL
   const uploadAndSubmit = async () => {
-    if (!image) {
+    if (!imageUri) {
       Alert.alert("Validation", "Please select a photo.");
       return;
     }
@@ -57,35 +79,32 @@ export default function AddItemScreen() {
     }
 
     try {
-      // Upload image to Firebase Storage
       const storage = getStorage();
-      const uniqueFileName = new Date().getTime() + "-" + image.fileName;
+      const uniqueFileName = new Date().getTime() + "-image";
       const storageRef = ref(storage, `images/${uniqueFileName}`);
 
-      // Convert image URI to a blob
-      const response = await fetch(image.uri);
+      // Fetch the image and convert it into a blob
+      const response = await fetch(imageUri);
       const blob = await response.blob();
 
-      // Upload image blob to Firebase Storage
+      // Upload the image blob to Firebase Storage
       await uploadBytes(storageRef, blob);
 
       // Get the download URL of the uploaded image
       const downloadUrl = await getDownloadURL(storageRef);
-      setImageUri(downloadUrl);
 
-      // Add item to Firestore with image URL
+      // Add the item to Firestore with the image URL
       const newDocRef = await db.collection("items").add({
         name: text,
         completed: false,
-        imageUrl: downloadUrl, // Save image URL in Firestore with the note
+        imageUrl: downloadUrl,
       });
 
       const newList = [...listData, { key: newDocRef.id, name: text, imageUrl: downloadUrl }];
       setListData(newList);
 
-      // Clear input and image fields
+      // Clear input fields
       setText("");
-      setImage(null);
       setImageUri(null);
     } catch (error) {
       Alert.alert("Error", "Failed to save the item to Firebase.");
@@ -93,29 +112,21 @@ export default function AddItemScreen() {
     }
   };
 
-  // Function to handle item removal
-  async function handleRemoveItem(key) {
-    try {
-      await db.collection("items").doc(key).delete();
-
-      const newList = listData.filter((item) => item.key !== key);
-      setListData(newList);
-    } catch (error) {
-      Alert.alert("Error", "Failed to delete the item from Firebase.");
-      console.error(error);
-    }
-  }
-
   return (
     <View style={styles.container}>
       <Text>Add a new item to your list</Text>
       <TextInput placeholder="Enter item name" onChangeText={(txt) => setText(txt)} value={text} style={styles.textinput} />
 
-      <Pressable onPress={pickImage} style={styles.pressable}>
+      <Pressable onPress={() => pickImage("library")} style={styles.pressable}>
         <Text style={styles.pressableText}>Select Photo</Text>
       </Pressable>
 
-      {image && <Image source={{ uri: image.uri }} style={{ width: 100, height: 100 }} />}
+      <Pressable onPress={() => pickImage("camera")} style={styles.pressable}>
+        <Text style={styles.pressableText}>Take Photo</Text>
+      </Pressable>
+
+      {/* Show the selected image */}
+      {imageUri && <Image source={{ uri: imageUri }} style={{ width: 100, height: 100 }} />}
 
       <Pressable onPress={uploadAndSubmit} style={styles.pressable}>
         <Text style={styles.pressableText}>Submit Item</Text>
