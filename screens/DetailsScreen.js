@@ -8,9 +8,6 @@ import MapView, { Marker } from "react-native-maps";
 export default function DetailsScreen({ route, navigation }) {
   const { item } = route.params;
 
-  // Check the structure of the item object
-  console.log("Navigated item:", item); // Log the item for debugging
-
   const [itemText, setItemText] = useState(item.name);
   const [imageUri, setImageUri] = useState(item.imageUrl);
   const [location, setLocation] = useState({

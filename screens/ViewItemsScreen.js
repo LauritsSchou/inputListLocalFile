@@ -15,6 +15,7 @@ export default function ViewItemsScreen() {
         name: doc.data().name,
         completed: doc.data().completed,
         imageUrl: doc.data().imageUrl,
+        location: doc.data().location,
       }));
       setListData(items);
     });
